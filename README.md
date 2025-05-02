@@ -4,16 +4,17 @@
 
 ### What's New ###
 
-> Version: 0.2.0
+> Version: 1.0.1
 
-> Release Date: 2025-04-30
+> Release Date: 2025-05-02
 
-> Last Update: 2025-04-30
+> Last Update: 2025-05-02
 
 ### Requirements ###
 * Python 3 and its libs 
 * Pyodbc (for MS SQL Server)
-* Mysql Connector Python (for MySQL/MariaDB) 
+* Mysql Connector Python (for MySQL) 
+* Maria DB Connector (for MariaDB) 
 
 ### Licensing ###
 This Python DAO library is an OPEN SOURCE software under the MIT license
@@ -43,24 +44,27 @@ A DAO is a much lighter tool, which does not intend to abstract the database SQL
 * Database connections handling, making sure that none is left open
 * Database cursors handling, also making sure that none is left open
 * Data persistence in memory, thus avoiding unnecessary SQL executions
-* An interface to all database operations, so you don't have to write basic queries
+* An interface to all database basic operations, so you don't have to write basic queries
 * A set of tools to facilitate when you have to write more complex queries
 * Handles the results, returning lists and dictionaries with the data, right to your hand
 * Filtering methods, which construct your query conditions and avoid SQL injections
+* Chainable filters (in, like, greater than, etc.) which construct your query conditions and avoid SQL injections
 
 ... and so on. Basically you don't have to worry with all those annoying side-things you would have, when working with databases, then can focus on the application itself, that you're building.
 
 ---
 
 ## Get Started ##
-It just came out of the oven, so I didn't have enough time to place it on `pip`. I'll do it later.
+This DAO supports **MySQL**, **MS SQL Server** and **Maria DB** and you can install for one or for all these RDBMS:
 
-For now, you can download it and place it in your project as a normal person. xD
-
-With the package in place install the dependencies:
-
+For full RDBMS support:
 ```sh
-pip install -r requirements.txt
+pip install sdao[mysql,mariadb,mssql]
+```
+
+If you want only an specific, you can just supress the names of the others. Ex.:
+```sh
+pip install sdao[mysql] # only for MySQL
 ```
 
 **NOTE: if you're using MS SQL in a linux environment, make sure to have the correct MS ODBC driver installed:**
@@ -72,19 +76,20 @@ sudo apt install curl gnupg2
 
 # Add Microsoft's repo and key
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+curl https://packages.microsoft.com/config/ubuntu/{VERSION}/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
 
 # Install ODBC driver
 sudo apt update
 sudo apt install msodbcsql17
 
 ```
-### Basic Usage (CRUD) ###
+### Basic Usage (CRUD - Using 'MySQL' as example) ###
 
 * **How to insert data into the database?(C)**
 
 ```python 
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
 data = {
   'field1': 'foo'
@@ -92,16 +97,31 @@ data = {
   'numeric': 12
 }
 
-newlyInsertedObj = GetDao('some_table').insert(data)
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+newlyInsertedObj = GetDao('some_table', mysqlCnn).insert(data)
 ```
 The code above inserts the *data* into the database and returns a dictionary containing the inserted register, including the auto increment primary key.
 
 * **How do I read data from the database?(R)**
 
 ```python 
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-result = GetDao('some_table').find()
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+result = GetDao('some_table', mysqlCnn).find()
 ```
 The code above retrieves a list of dictionaries, containing, each, a row of the table "some_table".
 
@@ -109,7 +129,8 @@ The code above retrieves a list of dictionaries, containing, each, a row of the 
 * **How to update data?(U)**
 
 ```python 
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
 data = {
   'field1': 'foo2'
@@ -117,42 +138,61 @@ data = {
   'numeric': 7
 }
 
-numAffectedRows = GetDao('some_table').update(data)
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+numAffectedRows = GetDao('some_table', mysqlCnn).update(data)
 ```
 The code above updates rows in the database, with the *data*, then returns an integer of how many rows were updated.
 
 * **How to delete data from the database?(D)**
 
 ```python 
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-numAffectedRows = GetDao('some_table').delete()
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+numAffectedRows = GetDao('some_table', mysqlCnn).delete()
 ```
 The code above deletes data from the database, then returns an integer of how many rows were deleted.
 
-### Connecting to the Database ###
-By default, it tries to get the database credentials from the environment variables, as follows:
-* DBHOST = "your database's host address"
-* DBPORT = "your database's port number"
-* DBNAME = "your database's name"
-* DBUSER = "your database's user name"
-* DBPASS = "your database's user password"
-
-You can also provide connections to it, in case you want to connect to multiple hosts and/or databases:
+### Multiple connectios and Multi-tenancy ###
+You can also provide different connections to each "GetDao" call, in case you want to connect to multiple hosts and/or databases:
 
 ```python
-from sdao.mysql import Cnn
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn as mysqlCnn
+from sdao.mssql import Cnn as mssqlCnn
 
-customConnection = Cnn(
+myCnn = mysqlCnn(
   host="your database's host address",
-  port=3306,
   database="your database's name",
   user="your database's user name",
   password="your database's user password"
 )
 
-GetDao('table_name', customConnection).find()
+msCnn = mssqlCnn(
+  host="your database's host address",
+  database="your database's name",
+  user="your database's user name",
+  password="your database's user password"
+)
+
+# Execute query on MySQL DB:
+GetDao('table_name', myCnn).find()
+
+# Execute query on MS SQL Server DB:
+GetDao('table_name', msCnn).find()
 ```
 
 ---
@@ -165,10 +205,18 @@ The filtering using **sdao** is made by the use of pairs of methods, which defin
 For example, as you don't want to delete all the users in your table, you want to filter the deletion by user's ID:
 
 ```python
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-numDeletedUsers = GetDao('users')\
-  .filter('id').equalsTo(12)
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+numDeletedUsers = GetDao('users', mysqlCnn)\
+  .filter('id').equalsTo(12)\
   .delete()
 ```
 The code above will delete the row in the table "users", in which the column "id" is equals to 12. Simple Enough?!
@@ -181,11 +229,19 @@ You can stack filters, indicating the logical operator to be used in the joining
 For example, imagine that now you want to select, from the database, all the male users who are minors:
 
 ```python
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-minorUsers = GetDao('users')\
-  .filter('age').lessThanOrEqualsTo(18)
-  ._and('sex').equalsTo('male')
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+minorUsers = GetDao('users', mysqlCnn)\
+  .filter('age').lessThanOrEqualsTo(18)\
+  ._and('sex').equalsTo('male')\
   .find()
 ```
 The code above will retrieve a list of dictionaries, each containing a row in the table "users", in which the column "age" is less than or equals to 18 **and** the column "sex" is equals to "male".
@@ -218,11 +274,19 @@ Ok, this far we already can make all the basic CRUD operations, filtering in any
 The method `find()` accepts, as its first argument, a SQL string to be executed against the database, so if you need to make a specific alien search on the database, full of `JOIN`, `ORDER BY`, `GROUP BY`, subqueries, etc., you can write the query and pass it directly to the `find()` method and use the same filtering mechanics to put data safely into your query:
 
 ```python
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-result = GetDao('table_1')\
-  .filter('filterValue1').equalsTo("something")
-  ._and('filterValue2').like("other something")
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+result = GetDao('table_1', mysqlCnn)\
+  .filter('filterValue1').equalsTo("something")\
+  ._and('filterValue2').like("other something")\
   .find(
     """
     SELECT tb1.column1 FROM `table_1` tb1
@@ -233,15 +297,23 @@ result = GetDao('table_1')\
   """
   )
 ```
-The code above executes the provided SQL query against the database, replacing safely the *filter placeholders* in the query by the provided values, then stores a list with the results in the variable `result`
+The code above executes the provided SQL query against the database, replacing safely, avoiding SQL injection, the *filter placeholders* in the query by the provided values, then stores a list with the results in the variable `result`
 
 ### Debugging your queries ###
 All the operations receive an argument for debugging, which is a boolean flag, that, when turned on, instead of executing the query against the database, returns a dictionary containing the resulting SQL and all the filters applied to it:
 
 ```python
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-queryInfo = GetDao('table_name').filter('some_column').equalsTo(123).find('', True)
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+queryInfo = GetDao('table_name', mysqlCnn).filter('some_column').equalsTo(123).find('', True)
 ```
 The `queryInfo` variable in the code above holds the following:
 ```python
@@ -253,9 +325,17 @@ What if you're writing a function which shall return, not a list, but a single r
 
 You can make use of the method: `first()`, which is pretty much alike the `find()` method, but instead of returning a list, returns a single dictionary, containing the first row found in the results or `None` in case of no results are found (`find()` would return an empty list in this case):
 ```python
-from sdao.mysql import GetDao
+from sdao import GetDao
+from sdao.mysql import Cnn
 
-singleRow = GetDao('users')\
+mysqlCnn = Cnn(
+  host='your host address',
+  database='your database name',
+  user='database user name',
+  password='database user password',
+)
+
+singleRow = GetDao('users', mysqlCnn)\
   .filter('id').equalsTo(12)\
   .first()
 ```
@@ -265,7 +345,7 @@ singleRow = GetDao('users')\
 ## That's all folks! ##
 I hope you enjoy this tool and I wish it can help you! Feel free to ask any questions.
 
-If you're a senior developer, full of critiques, like myself: I know that there's lots of things that can be added and improved on this and the source is lacking commentaries, but I had only 4 days to work on this tool, so take it easy, for now, it's a puppy! xD
+If you're a senior developer, full of critiques, like myself: I know that there's lots of things that can be added and improved on this and the source is lacking commentaries, but I had only a few days to work on this tool, so take it easy, for now, it's just a child! xD
 
 By the way, it's open source, so if you're feeling creative, put your code where your mouth is and help me build this up!
 
