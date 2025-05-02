@@ -3,3 +3,4 @@
 /mysql/__pycache__
 /mssql/__pycache__
 /sdao.egg-info
+/dist
