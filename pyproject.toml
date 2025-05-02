@@ -1,0 +1,19 @@
+[project]
+name = "sdao"
+version = "1.0.0"
+description = "A DAO (Data Access Object) library for Python"
+authors = [{ name = "Gabriel Valentoni Guelfi", email = "gabriel.valguelfi@gmail.com" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.7"
+
+dependencies = []
+
+[project.optional-dependencies]
+mysql = ["mysql-connector-python"]
+mariadb = ["mariadb"]
+mssql = ["pyodbc"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
