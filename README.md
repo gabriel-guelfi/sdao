@@ -2,13 +2,7 @@
 
 *A DAO (Data Access Object) library for Python*
 
-### What's New ###
-
-> Version: 1.0.1
-
-> Release Date: 2025-05-02
-
-> Last Update: 2025-05-02
+[![PyPI version](https://badge.fury.io/py/sdao.svg)](https://pypi.org/project/sdao/)
 
 ### Requirements ###
 * Python 3 and its libs 

@@ -1,7 +1,9 @@
 import mysql.connector
 
 class Cnn:
-    def __init__(self, host: str, database: str, user: str, password: str, port: int=3306):
+    def __init__(self, host: str, database: str, user: str, password: str, port: int=3306, autocommit = True):
+        self.autocommit = autocommit
+        
         self.cnn = mysql.connector.connect(
             host=host,
             port=port,
@@ -13,44 +15,59 @@ class Cnn:
         self.dialect = 'mysql'
 
     def __del__(self):
+        self._cursor.close()
         self.cnn.close()
 
     def create(self, sql: str, data):
-        cursor = self.cnn.cursor(buffered=True, dictionary=True)
+        self._cursor = self.cnn.cursor(buffered=True, dictionary=True)
 
         if isinstance(data, list):
-            cursor.executemany(sql, data)
+            self._cursor.executemany(sql, data)
         
         elif isinstance(data, dict):
-            cursor.execute(sql, data)
+            self._cursor.execute(sql, data)
 
-        id = cursor.lastrowid
-        self.cnn.commit()
-        cursor.close()
+        id = self._cursor.lastrowid
+        
+        if self.autocommit:
+            self.commit()
+
         return id
 
     def read(self, sql: str, params: dict = {}, onlyFirstRow: bool = False):
-        cursor = self.cnn.cursor(buffered=True, dictionary=True)
-        cursor.execute(sql, params)
+        self._cursor = self.cnn.cursor(buffered=True, dictionary=True)
+        self._cursor.execute(sql, params)
         if onlyFirstRow: 
-            result = cursor.fetchone()
+            result = self._cursor.fetchone()
         else:
-            result = cursor.fetchall()
-        cursor.close()
+            result = self._cursor.fetchall()
+        self._cursor.close()
         return result
     
     def update(self, sql: str, mysqlParams: dict):
-        cursor = self.cnn.cursor(buffered=True, dictionary=True)
-        cursor.execute(sql, mysqlParams)
-        affectedRows = cursor.rowcount
-        self.cnn.commit()
-        cursor.close()
+        self._cursor = self.cnn.cursor(buffered=True, dictionary=True)
+        self._cursor.execute(sql, mysqlParams)
+        affectedRows = self._cursor.rowcount
+        
+        if self.autocommit:
+            self.commit()
+
         return affectedRows
     
     def delete(self, sql: str, params: dict = {}):
-        cursor = self.cnn.cursor(buffered=True, dictionary=True)
-        cursor.execute(sql, params)
-        affectedRows = cursor.rowcount
-        self.cnn.commit()
-        cursor.close()
+        self._cursor = self.cnn.cursor(buffered=True, dictionary=True)
+        self._cursor.execute(sql, params)
+        affectedRows = self._cursor.rowcount
+        
+        if self.autocommit:
+            self.commit()
+
         return affectedRows
+    
+    def commit(self):
+        self.cnn.commit()
+        self._cursor.close()
+
+    def rollback(self):
+        self.cnn.rollback()
+        self._cursor.close()

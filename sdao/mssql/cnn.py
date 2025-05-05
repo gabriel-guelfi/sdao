@@ -2,7 +2,9 @@ import pyodbc
 import re
 
 class Cnn:
-    def __init__(self, host: str, database: str, user: str, password: str, port: str="1433"):
+    def __init__(self, host: str, database: str, user: str, password: str, port: str="1433", autocommit = True):
+        self.autocommit = autocommit
+        
         self.cnn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server};'
             f'SERVER={host},{port};'
@@ -14,6 +16,7 @@ class Cnn:
         self.dialect = 'mssql'
 
     def __del__(self):
+        self._cursor.close()
         self.cnn.close()
 
     def _fetchall_as_dicts(self, cursor):
@@ -26,68 +29,81 @@ class Cnn:
         return dict(zip(columns, row)) if row else None
 
     def create(self, sql: str, data):
-        cursor = self.cnn.cursor()
+        self._cursor = self.cnn.cursor()
 
         if isinstance(data, list):
-            cursor.executemany(sql, data)
+            self._cursor.executemany(sql, data)
         elif isinstance(data, dict):
-            cursor.execute(sql, data)
+            self._cursor.execute(sql, data)
 
         # pyodbc does not support lastrowid reliably across all backends
         # Use SCOPE_IDENTITY() explicitly for SQL Server if needed
-        cursor.execute("SELECT SCOPE_IDENTITY()")
-        last_id = cursor.fetchone()[0]
+        self._cursor.execute("SELECT SCOPE_IDENTITY()")
+        last_id = self._cursor.fetchone()[0]
 
-        self.cnn.commit()
-        cursor.close()
+        if self.autocommit:
+            self.commit()
+
         return last_id
 
     def read(self, sql: str, params: dict = {}, onlyFirstRow: bool = False):
-        cursor = self.cnn.cursor()
+        self._cursor = self.cnn.cursor()
 
         # detecta se a query tem marcadores no estilo %(param)s
         has_markers = bool(re.search(r"%\([^)]+\)s", sql))
         has_params = bool(params)
 
         if has_markers and has_params:
-            cursor.execute(sql, params)
+            self._cursor.execute(sql, params)
         else:
-            cursor.execute(sql)
+            self._cursor.execute(sql)
 
-        result = self._fetchone_as_dict(cursor) if onlyFirstRow else self._fetchall_as_dicts(cursor)
-        cursor.close()
+        result = self._fetchone_as_dict(self._cursor) if onlyFirstRow else self._fetchall_as_dicts(self._cursor)
+        self._cursor.close()
         return result
 
     def update(self, sql: str, params: dict):
-        cursor = self.cnn.cursor()
+        self._cursor = self.cnn.cursor()
 
         # detecta se a query tem marcadores no estilo %(param)s
         has_markers = bool(re.search(r"%\([^)]+\)s", sql))
         has_params = bool(params)
 
         if has_markers and has_params:
-            cursor.execute(sql, params)
+            self._cursor.execute(sql, params)
         else:
-            cursor.execute(sql)
+            self._cursor.execute(sql)
             
-        affectedRows = cursor.rowcount
-        self.cnn.commit()
-        cursor.close()
+        affectedRows = self._cursor.rowcount
+        
+        if self.autocommit:
+            self.commit()
+
         return affectedRows
 
     def delete(self, sql: str, params: dict = {}):
-        cursor = self.cnn.cursor()
+        self._cursor = self.cnn.cursor()
 
         # detecta se a query tem marcadores no estilo %(param)s
         has_markers = bool(re.search(r"%\([^)]+\)s", sql))
         has_params = bool(params)
 
         if has_markers and has_params:
-            cursor.execute(sql, params)
+            self._cursor.execute(sql, params)
         else:
-            cursor.execute(sql)
+            self._cursor.execute(sql)
 
-        affectedRows = cursor.rowcount
-        self.cnn.commit()
-        cursor.close()
+        affectedRows = self._cursor.rowcount
+        
+        if self.autocommit:
+            self.commit()
+
         return affectedRows
+    
+    def commit(self):
+        self.cnn.commit()
+        self._cursor.close()
+
+    def rollback(self):
+        self.cnn.rollback()
+        self._cursor.close()

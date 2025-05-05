@@ -1,7 +1,9 @@
 import mariadb
 
 class Cnn:
-    def __init__(self, host: str, database: str, user: str, password: str, port: int = 3306, useSocket = False):
+    def __init__(self, host: str, database: str, user: str, password: str, port: int = 3306, useSocket = False, autocommit = True):
+        self.autocommit = autocommit
+
         if host == 'localhost' and not useSocket:
             host = '127.0.0.1'
 
@@ -16,6 +18,7 @@ class Cnn:
         self.dialect = 'mariadb'
         
     def __del__(self):
+        self._cursor.close()
         self.cnn.close()
 
     def _fetchall_as_dicts(self, cursor):
@@ -28,36 +31,50 @@ class Cnn:
         return dict(zip(columns, row)) if row else None
 
     def create(self, sql: str, data):
-        cursor = self.cnn.cursor()
+        self._cursor = self.cnn.cursor()
         if isinstance(data, list):
-            cursor.executemany(sql, data)
+            self._cursor.executemany(sql, data)
         elif isinstance(data, dict):
-            cursor.execute(sql, data)
+            self._cursor.execute(sql, data)
 
-        last_id = cursor.lastrowid
-        self.cnn.commit()
-        cursor.close()
+        last_id = self._cursor.lastrowid
+
+        if self.autocommit:
+            self.commit()
+
         return last_id
 
     def read(self, sql: str, params: dict = {}, onlyFirstRow: bool = False):
-        cursor = self.cnn.cursor()
-        cursor.execute(sql, params)
-        result = self._fetchone_as_dict(cursor) if onlyFirstRow else self._fetchall_as_dicts(cursor)
-        cursor.close()
+        self._cursor = self.cnn.cursor()
+        self._cursor.execute(sql, params)
+        result = self._fetchone_as_dict(self._cursor) if onlyFirstRow else self._fetchall_as_dicts(self._cursor)
+        self._cursor.close()
         return result
 
     def update(self, sql: str, params: dict):
-        cursor = self.cnn.cursor()
-        cursor.execute(sql, params)
-        affectedRows = cursor.rowcount
-        self.cnn.commit()
-        cursor.close()
+        self._cursor = self.cnn.cursor()
+        self._cursor.execute(sql, params)
+        affectedRows = self._cursor.rowcount
+
+        if self.autocommit:
+            self.commit()
+
         return affectedRows
 
     def delete(self, sql: str, params: dict = {}):
-        cursor = self.cnn.cursor()
-        cursor.execute(sql, params)
-        affectedRows = cursor.rowcount
-        self.cnn.commit()
-        cursor.close()
+        self._cursor = self.cnn.cursor()
+        self._cursor.execute(sql, params)
+        affectedRows = self._cursor.rowcount
+
+        if self.autocommit:
+            self.commit()
+            
         return affectedRows
+    
+    def commit(self):
+        self.cnn.commit()
+        self._cursor.close()
+
+    def rollback(self):
+        self.cnn.rollback()
+        self._cursor.close()
