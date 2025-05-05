@@ -15,8 +15,11 @@ class Cnn:
         self.dialect = 'mysql'
 
     def __del__(self):
-        self._cursor.close()
-        self.cnn.close()
+        try:
+            self._cursor.close()
+            self.cnn.close()
+        except Exception as exc:
+            pass
 
     def create(self, sql: str, data):
         self._cursor = self.cnn.cursor(buffered=True, dictionary=True)

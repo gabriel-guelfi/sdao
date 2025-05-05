@@ -16,8 +16,11 @@ class Cnn:
         self.dialect = 'mssql'
 
     def __del__(self):
-        self._cursor.close()
-        self.cnn.close()
+        try:
+            self._cursor.close()
+            self.cnn.close()
+        except Exception as exc:
+            pass
 
     def _fetchall_as_dicts(self, cursor):
         columns = [col[0] for col in cursor.description]
