@@ -2,7 +2,6 @@ class SqlBuilder:
     def __init__(self, table: str):
         self.table = table
         self.basicSelect = f'SELECT * FROM `{table}`'
-        self.primaryKeyQuery = f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'"
 
     def insert(self, data):
         if isinstance(data, dict):

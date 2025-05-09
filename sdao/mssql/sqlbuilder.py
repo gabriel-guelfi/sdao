@@ -2,12 +2,6 @@ class SqlBuilder:
     def __init__(self, table: str):
         self.table = table
         self.basicSelect = f'SELECT * FROM [{table}]'
-        self.primaryKeyQuery = f"""
-        SELECT COLUMN_NAME AS Column_name
-        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-        WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_NAME), 'IsPrimaryKey') = 1
-        AND TABLE_NAME = '{table}'
-    """
 
     def insert(self, data):
         if isinstance(data, dict):

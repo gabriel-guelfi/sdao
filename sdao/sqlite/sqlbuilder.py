@@ -11,53 +11,46 @@ class SqlBuilder:
 
         values = []
         for key in keys:
-            values.append(f"%({key})s")
+            values.append(f":{key}")
 
-        sql = f"INSERT INTO `{self.table}` ({','.join(keys)}) VALUES({','.join(values)})"
+        sql = f"INSERT INTO `{self.table}` ({','.join(f'`{k}`' for k in keys)}) VALUES({','.join(values)})"
         return sql
-    
+
     def update(self, data: dict):
         pairs = []
         for key in data:
-            pairs.append(f"{key} = %({key})s")
+            pairs.append(f"`{key}` = :{key}")
 
         return f"UPDATE `{self.table}` SET {','.join(pairs)}"
-    
+
     def delete(self):
         return f"DELETE FROM `{self.table}`"
-    
+
     def whereCondition(self, params: list):
         result = 'WHERE'
         usedParamNames = []
 
         for condition in params:
-            # Define param name:
-            paramName = f"{condition['paramName']}"
+            paramName = f"`{condition['paramName']}`"
             paramAlias = f"param_{condition['paramName']}"
 
-            # Define logical operator:
             logicalOperator = condition['logicalOperator']
-            
-            # Define comparison operator:
             comparisonOperator = condition['comparisonOperator']
 
-            # Define condition's value:
             if isinstance(condition['value'], list):
                 comparisonOperator = "IN" if comparisonOperator != "NOT IN" else comparisonOperator
 
-                # Find next:
-                next = 0
+                next_index = 0
                 while True:
-                    if not f"{paramAlias}_{next}" in usedParamNames:
+                    if not f"{paramAlias}_{next_index}" in usedParamNames:
                         break
-                    
-                    next = next + 1
+                    next_index += 1
 
                 joinedValues = []
                 for i in range(0, len(condition['value'])):
-                    inParamName = f"{paramAlias}_{i + next}"
+                    inParamName = f"{paramAlias}_{i + next_index}"
                     usedParamNames.append(inParamName)
-                    joinedValues.append(f"%({inParamName})s")
+                    joinedValues.append(f":{inParamName}")
 
                 value = f"({','.join(joinedValues)})"
 
@@ -69,10 +62,9 @@ class SqlBuilder:
                     comparisonOperator = ''
 
             else: 
-                value = f" %({paramAlias})s" if condition['value'] is not None else ''
+                value = f" :{paramAlias}" if condition['value'] is not None else ''
 
-            # Set logical operator:
-            if not logicalOperator == None:
+            if logicalOperator is not None:
                 result = f"{result} {logicalOperator}"
 
             result = f"{result} {paramName} {comparisonOperator}{value}"

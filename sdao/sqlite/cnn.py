@@ -1,21 +1,13 @@
-import mariadb
+import sqlite3
 
 class Cnn:
-    def __init__(self, host: str, database: str, user: str, password: str, port: int = 3306, useSocket = False, autocommit = True):
+    def __init__(self, database: str, datapath: str = '', autocommit = True):
         self.autocommit = autocommit
 
-        if host == 'localhost' and not useSocket:
-            host = '127.0.0.1'
+        self.cnn = sqlite3.connect(f'{datapath}/{database}.sqlite')
+        self.cnn.row_factory = sqlite3.Row
 
-        self.cnn = mariadb.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            database=database
-        )
-
-        self.dialect = 'mariadb'
+        self.dialect = 'sqlite'
         
     def __del__(self):
         try:
@@ -23,15 +15,6 @@ class Cnn:
             self.cnn.close()
         except Exception as exc:
             pass
-
-    def _fetchall_as_dicts(self, cursor):
-        columns = [col[0] for col in cursor.description]
-        return [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-    def _fetchone_as_dict(self, cursor):
-        columns = [col[0] for col in cursor.description]
-        row = cursor.fetchone()
-        return dict(zip(columns, row)) if row else None
 
     def create(self, sql: str, data):
         self._cursor = self.cnn.cursor()
@@ -47,12 +30,18 @@ class Cnn:
 
         return last_id
 
-    def read(self, sql: str, params: dict = {}, onlyFirstRow: bool = False):
+    def read(self, sql: str, params: dict = {}, onlyFirstRow = False):
         self._cursor = self.cnn.cursor()
         self._cursor.execute(sql, params)
-        result = self._fetchone_as_dict(self._cursor) if onlyFirstRow else self._fetchall_as_dicts(self._cursor)
+        result = []
+        for item in self._cursor.fetchall():
+            result.append(dict(item))
+
         self._cursor.close()
-        return result
+        if onlyFirstRow:
+            return result[0] if bool(result[0]) else None
+        else:
+            return result
 
     def update(self, sql: str, params: dict):
         self._cursor = self.cnn.cursor()
@@ -83,6 +72,12 @@ class Cnn:
         self._cursor.close()
 
     def getPrimaryKey(self, table):
-        sql = f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'"
-        tbinfo = self.read(sql)
-        return tbinfo['Column_name'] if tbinfo else None
+        self._cursor.execute(f"PRAGMA table_info(`{table}`")
+        cols = self._cursor.fetchall()
+        primary_keys = [col['name'] for col in cols if col['pk'] > 0]
+        if len(primary_keys) == 0: 
+            return None
+        elif len(primary_keys) == 1: 
+            return primary_keys[0]
+        else: 
+            return primary_keys

@@ -110,3 +110,13 @@ class Cnn:
     def rollback(self):
         self.cnn.rollback()
         self._cursor.close()
+
+    def getPrimaryKey(self, table):
+        sql = f"""
+        SELECT COLUMN_NAME AS Column_name
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+        WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_NAME), 'IsPrimaryKey') = 1
+        AND TABLE_NAME = '{table}'
+    """
+        tbinfo = self.read(sql)
+        return tbinfo['Column_name'] if tbinfo else None

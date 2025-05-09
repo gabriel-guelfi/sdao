@@ -74,3 +74,8 @@ class Cnn:
     def rollback(self):
         self.cnn.rollback()
         self._cursor.close()
+
+    def getPrimaryKey(self, table):
+        sql = f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'"
+        tbinfo = self.read(sql)
+        return tbinfo['Column_name'] if tbinfo else None

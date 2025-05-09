@@ -51,7 +51,7 @@ class GetDao:
 
         lastId = self.cnn.create(sql, data)
 
-        tbKeyName = self.findTableKey()
+        tbKeyName = self.cnn.getPrimaryKey(self.table)
         if isinstance(data, dict):
             data[tbKeyName] = lastId
         elif isinstance(data, list):
@@ -261,8 +261,3 @@ class GetDao:
 
         result = hashlib.md5(result.encode())
         return result.hexdigest()
-
-    def findTableKey(self):
-        sql = self.sqlbuilder.primaryKeyQuery
-        tbinfo = self.first(sql)
-        return tbinfo['Column_name'] if tbinfo else None
