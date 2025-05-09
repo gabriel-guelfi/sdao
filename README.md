@@ -61,6 +61,12 @@ If you want only an specific, you can just supress the names of the others. Ex.:
 pip install sdao[mysql] # only for MySQL
 ```
 
+It also supports **SQLite**, but as it is built-in in python there's no need to specify it on the installation, so, if you do:
+```sh
+pip install sdao # no RDBMS specified
+```
+you still can use SQLite.
+
 **NOTE: if you're using MS SQL in a linux environment, make sure to have the correct MS ODBC driver installed:**
 
 ```sh
