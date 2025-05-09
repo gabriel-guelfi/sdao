@@ -1,10 +1,10 @@
 import sqlite3
 
 class Cnn:
-    def __init__(self, database: str, datapath: str = '', autocommit = True):
+    def __init__(self, database: str, datapath: str = './', autocommit = True):
         self.autocommit = autocommit
 
-        self.cnn = sqlite3.connect(f'{datapath}/{database}.sqlite')
+        self.cnn = sqlite3.connect(f'{datapath}{database}.db')
         self.cnn.row_factory = sqlite3.Row
 
         self.dialect = 'sqlite'
@@ -72,9 +72,11 @@ class Cnn:
         self._cursor.close()
 
     def getPrimaryKey(self, table):
-        self._cursor.execute(f"PRAGMA table_info(`{table}`")
-        cols = self._cursor.fetchall()
+        cursor = self.cnn.cursor()
+        cursor.execute(f"PRAGMA table_info(`{table}`)")
+        cols = cursor.fetchall()
         primary_keys = [col['name'] for col in cols if col['pk'] > 0]
+        cursor.close()
         if len(primary_keys) == 0: 
             return None
         elif len(primary_keys) == 1: 
