@@ -69,11 +69,13 @@ class Cnn:
     
     def commit(self):
         self.cnn.commit()
-        self._cursor.close()
+        if bool(self._cursor):
+            self._cursor.close()
 
     def rollback(self):
         self.cnn.rollback()
-        self._cursor.close()
+        if bool(self._cursor):
+            self._cursor.close()
 
     def getPrimaryKey(self, table):
         sql = f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'"
