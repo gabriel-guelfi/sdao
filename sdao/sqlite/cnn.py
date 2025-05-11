@@ -39,7 +39,7 @@ class Cnn:
 
         self._cursor.close()
         if onlyFirstRow:
-            return result[0] if bool(result[0]) else None
+            return result[0] if len(result) > 0 else None
         else:
             return result
 
