@@ -86,5 +86,5 @@ class Cnn:
 
     def getPrimaryKey(self, table):
         sql = f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'"
-        tbinfo = self.read(sql)
+        tbinfo = self.read(sql,onlyFirstRow=True)
         return tbinfo['Column_name'] if tbinfo else None

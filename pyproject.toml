@@ -1,6 +1,6 @@
 [project]
 name = "sdao"
-version = "1.2.0"
+version = "1.2.2"
 description = "A DAO (Data Access Object) library for Python"
 authors = [{ name = "Gabriel Valentoni Guelfi", email = "gabriel.valguelfi@gmail.com" }]
 readme = "README.md"

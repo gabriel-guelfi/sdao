@@ -120,5 +120,5 @@ class Cnn:
         WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_NAME), 'IsPrimaryKey') = 1
         AND TABLE_NAME = '{table}'
     """
-        tbinfo = self.read(sql)
+        tbinfo = self.read(sql, onlyFirstRow = True)
         return tbinfo['Column_name'] if tbinfo else None
