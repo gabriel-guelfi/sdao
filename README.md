@@ -54,7 +54,7 @@ This DAO supports **MySQL**, **MS SQL Server**, **Maria DB** and **Firebird DB**
 
 For full RDBMS support:
 ```sh
-pip install sdao[mysql,mariadb,mssql,fdb]
+pip install sdao[mysql,mariadb,mssql,firebird]
 ```
 
 If you want only an specific, you can just supress the names of the others. Ex.:
