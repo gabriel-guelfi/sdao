@@ -1,7 +1,3 @@
-/__pycache__
-/mariadb/__pycache__
-/mysql/__pycache__
-/mssql/__pycache__
-/sqlite/__pycache__
-/sdao.egg-info
+__pycache__
+sdao.egg-info
 /dist

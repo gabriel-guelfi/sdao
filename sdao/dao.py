@@ -52,12 +52,14 @@ class GetDao:
         lastId = self.cnn.create(sql, data)
 
         tbKeyName = self.cnn.getPrimaryKey(self.table)
-        if isinstance(data, dict):
-            data[tbKeyName] = lastId
-        elif isinstance(data, list):
-            for obj in data:
-                obj[tbKeyName] = lastId
-                lastId = lastId + 1
+
+        if tbKeyName is not None and lastId is not None:
+            if isinstance(data, dict):
+                data[tbKeyName] = lastId
+            elif isinstance(data, list):
+                for obj in data:
+                    obj[tbKeyName] = lastId
+                    lastId = lastId + 1
 
         return data
     
