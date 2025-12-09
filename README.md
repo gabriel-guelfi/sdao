@@ -50,11 +50,11 @@ A DAO is a much lighter tool, which does not intend to abstract the database SQL
 ---
 
 ## Get Started ##
-This DAO supports **MySQL**, **MS SQL Server**, **Maria DB** and **Firebird DB**, and you can install for one or for all these RDBMS:
+This DAO supports **SQLite**, **MySQL**, **MS SQL Server**, **Maria DB** and **Firebird DB**, and you can install for one or for all these RDBMS:
 
 For full RDBMS support:
 ```sh
-pip install sdao[mysql,mariadb,mssql,firebird]
+pip install sdao[mysql,mariadb,mssql,firebird] # for SQLite no need for specfication here
 ```
 
 If you want only an specific, you can just supress the names of the others. Ex.:
